@@ -206,6 +206,88 @@ export const MarkAsUnreadInputSchema = z.object({
   messageIds: z.array(z.string()).min(1).describe('Message IDs to mark as unread'),
 });
 
+// ── Phase 3: Attachment Operations ──
+
+export const ListAttachmentsInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message to list attachments for'),
+});
+
+export const GetAttachmentInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message containing the attachment'),
+  attachmentId: z.string().describe('The ID of the attachment to download'),
+});
+
+export const GetAttachmentMetadataInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message containing the attachment'),
+  attachmentId: z.string().describe('The ID of the attachment'),
+});
+
+// ── Phase 3: Filter Operations ──
+
+export const FilterCriteriaSchema = z.object({
+  from: z.string().optional().describe('Sender match'),
+  to: z.string().optional().describe('Recipient match'),
+  subject: z.string().optional().describe('Subject match'),
+  query: z.string().optional().describe('Gmail search query match'),
+  negatedQuery: z.string().optional().describe('Exclude messages matching this query'),
+  hasAttachment: z.boolean().optional().describe('Has attachment'),
+  size: z.number().optional().describe('Size in bytes'),
+  sizeComparison: z.enum(['larger', 'smaller']).optional().describe('Size comparison operator'),
+});
+
+export const FilterActionSchema = z.object({
+  addLabelIds: z.array(z.string()).optional().describe('Label IDs to apply'),
+  removeLabelIds: z.array(z.string()).optional().describe('Label IDs to remove (e.g. INBOX to archive)'),
+  forward: z.string().optional().describe('Forward to this email address'),
+  markAsRead: z.boolean().optional().describe('Mark matching messages as read'),
+  star: z.boolean().optional().describe('Star matching messages'),
+  trash: z.boolean().optional().describe('Move matching messages to trash'),
+  neverSpam: z.boolean().optional().describe('Never send matching messages to spam'),
+  markImportant: z.boolean().optional().describe('Mark matching messages as important'),
+});
+
+export const ListFiltersInputSchema = z.object({});
+
+export const GetFilterInputSchema = z.object({
+  filterId: z.string().describe('The ID of the filter to retrieve'),
+});
+
+export const CreateFilterInputSchema = z.object({
+  criteria: FilterCriteriaSchema.describe('Filter matching criteria'),
+  action: FilterActionSchema.optional().describe('Actions to perform on matching messages'),
+});
+
+export const DeleteFilterInputSchema = z.object({
+  filterId: z.string().describe('The ID of the filter to delete'),
+});
+
+// ── Phase 3: Settings Operations ──
+
+export const GetProfileInputSchema = z.object({});
+
+export const GetVacationSettingsInputSchema = z.object({});
+
+export const UpdateVacationSettingsInputSchema = z.object({
+  enableAutoReply: z.boolean().describe('Whether to enable the vacation auto-reply'),
+  responseSubject: z.string().optional().describe('Subject line for the auto-reply'),
+  responseBodyPlainText: z.string().optional().describe('Plain text body for the auto-reply'),
+  responseBodyHtml: z.string().optional().describe('HTML body for the auto-reply'),
+  restrictToContacts: z.boolean().optional().describe('Only auto-reply to people in contacts'),
+  restrictToDomain: z.boolean().optional().describe('Only auto-reply to people in the same domain'),
+  startTime: z.string().optional().describe('Start time in ISO 8601 format (e.g. 2026-04-01T00:00:00Z)'),
+  endTime: z.string().optional().describe('End time in ISO 8601 format (e.g. 2026-04-15T00:00:00Z)'),
+});
+
+export const ListSendAsAliasesInputSchema = z.object({});
+
+export const ListForwardingAddressesInputSchema = z.object({});
+
+// ── Phase 3: Unsubscribe ──
+
+export const UnsubscribeInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message to find an unsubscribe mechanism for'),
+});
+
 // ── Output Types ──
 
 export interface AttachmentInfo {

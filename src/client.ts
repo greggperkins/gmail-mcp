@@ -407,6 +407,122 @@ export class GmailClient {
     }
   }
 
+  // ── Attachments ──
+
+  async getAttachment(
+    messageId: string,
+    attachmentId: string,
+  ): Promise<{ data: string; size: number }> {
+    try {
+      const res = await this.gmail.users.messages.attachments.get({
+        userId: 'me',
+        messageId,
+        id: attachmentId,
+      });
+      return {
+        data: res.data.data || '',
+        size: res.data.size || 0,
+      };
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  // ── Filters ──
+
+  async listFilters(): Promise<gmail_v1.Schema$Filter[]> {
+    try {
+      const res = await this.gmail.users.settings.filters.list({ userId: 'me' });
+      return res.data.filter || [];
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async getFilter(filterId: string): Promise<gmail_v1.Schema$Filter> {
+    try {
+      const res = await this.gmail.users.settings.filters.get({
+        userId: 'me',
+        id: filterId,
+      });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async createFilter(params: {
+    criteria: gmail_v1.Schema$FilterCriteria;
+    action: gmail_v1.Schema$FilterAction;
+  }): Promise<gmail_v1.Schema$Filter> {
+    try {
+      const res = await this.gmail.users.settings.filters.create({
+        userId: 'me',
+        requestBody: {
+          criteria: params.criteria,
+          action: params.action,
+        },
+      });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async deleteFilter(filterId: string): Promise<void> {
+    try {
+      await this.gmail.users.settings.filters.delete({
+        userId: 'me',
+        id: filterId,
+      });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  // ── Settings ──
+
+  async getVacationSettings(): Promise<gmail_v1.Schema$VacationSettings> {
+    try {
+      const res = await this.gmail.users.settings.getVacation({ userId: 'me' });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async updateVacationSettings(
+    settings: gmail_v1.Schema$VacationSettings,
+  ): Promise<gmail_v1.Schema$VacationSettings> {
+    try {
+      const res = await this.gmail.users.settings.updateVacation({
+        userId: 'me',
+        requestBody: settings,
+      });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async listSendAsAliases(): Promise<gmail_v1.Schema$SendAs[]> {
+    try {
+      const res = await this.gmail.users.settings.sendAs.list({ userId: 'me' });
+      return res.data.sendAs || [];
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async listForwardingAddresses(): Promise<gmail_v1.Schema$ForwardingAddress[]> {
+    try {
+      const res = await this.gmail.users.settings.forwardingAddresses.list({ userId: 'me' });
+      return res.data.forwardingAddresses || [];
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
   // ── Profile ──
 
   async getProfile(): Promise<gmail_v1.Schema$Profile> {

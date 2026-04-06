@@ -6,9 +6,17 @@ import { registerMessageTools } from './tools/messages.js';
 import { registerThreadTools } from './tools/threads.js';
 import { registerLabelTools } from './tools/labels.js';
 import { registerDraftTools } from './tools/drafts.js';
+import { registerAttachmentTools } from './tools/attachments.js';
+import { registerFilterTools } from './tools/filters.js';
+import { registerSettingsTools } from './tools/settings.js';
 import { registerUtilityTools } from './tools/utilities.js';
 import { registerInboxResource } from './resources/inbox.js';
 import { registerProfileResource } from './resources/profile.js';
+import { registerLabelsResource } from './resources/labels.js';
+import { registerUnreadResource } from './resources/unread.js';
+import { registerInboxSummaryPrompt } from './prompts/inboxSummary.js';
+import { registerDraftReplyPrompt } from './prompts/draftReply.js';
+import { registerWeeklyDigestPrompt } from './prompts/weeklyDigest.js';
 
 async function main(): Promise<void> {
   // Handle auth subcommand
@@ -35,11 +43,21 @@ async function main(): Promise<void> {
   registerThreadTools(server, gmailClient);
   registerLabelTools(server, gmailClient);
   registerDraftTools(server, gmailClient);
+  registerAttachmentTools(server, gmailClient);
+  registerFilterTools(server, gmailClient);
+  registerSettingsTools(server, gmailClient);
   registerUtilityTools(server, gmailClient);
 
   // Register resources
   registerInboxResource(server, gmailClient);
   registerProfileResource(server, gmailClient);
+  registerLabelsResource(server, gmailClient);
+  registerUnreadResource(server, gmailClient);
+
+  // Register prompts
+  registerInboxSummaryPrompt(server);
+  registerDraftReplyPrompt(server);
+  registerWeeklyDigestPrompt(server);
 
   // Connect via stdio transport
   const transport = new StdioServerTransport();
