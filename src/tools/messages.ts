@@ -6,11 +6,16 @@ import {
   SearchMessagesInputSchema,
   SendMessageInputSchema,
   ReplyToMessageInputSchema,
+  ForwardMessageInputSchema,
+  TrashMessageInputSchema,
+  UntrashMessageInputSchema,
+  DeleteMessageInputSchema,
+  BatchModifyMessagesInputSchema,
   buildGmailQuery,
   wrapToolHandler,
 } from '../types.js';
 import { parseMessage } from '../parser.js';
-import { buildMimeMessage, buildReplyMimeMessage } from '../mime.js';
+import { buildMimeMessage, buildReplyMimeMessage, buildForwardMimeMessage } from '../mime.js';
 
 export function registerMessageTools(server: McpServer, client: GmailClient): void {
   server.tool(
@@ -175,6 +180,89 @@ export function registerMessageTools(server: McpServer, client: GmailClient): vo
         messageId: result.id,
         threadId: result.threadId,
         labelIds: result.labelIds,
+      };
+    }),
+  );
+
+  // ── Phase 2: Write Operations ──
+
+  server.tool(
+    'forwardMessage',
+    'Forward a Gmail message to new recipients. Includes the original message content with a standard forwarded message header.',
+    ForwardMessageInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = ForwardMessageInputSchema.parse(args);
+
+      const rawOriginal = await client.getMessage(parsed.messageId, 'full');
+      const original = parseMessage(rawOriginal);
+
+      const { raw } = buildForwardMimeMessage({
+        originalMessage: original,
+        to: parsed.to,
+        cc: parsed.cc,
+        bcc: parsed.bcc,
+        additionalBody: parsed.additionalBody,
+      });
+
+      const result = await client.sendMessage(raw);
+      return {
+        success: true,
+        messageId: result.id,
+        threadId: result.threadId,
+        labelIds: result.labelIds,
+      };
+    }),
+  );
+
+  server.tool(
+    'trashMessage',
+    'Move a Gmail message to the trash. The message can be recovered with untrashMessage.',
+    TrashMessageInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = TrashMessageInputSchema.parse(args);
+      await client.trashMessage(parsed.messageId);
+      return { success: true, messageId: parsed.messageId, action: 'trashed' };
+    }),
+  );
+
+  server.tool(
+    'untrashMessage',
+    'Remove a Gmail message from the trash, restoring it to its previous location.',
+    UntrashMessageInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = UntrashMessageInputSchema.parse(args);
+      await client.untrashMessage(parsed.messageId);
+      return { success: true, messageId: parsed.messageId, action: 'untrashed' };
+    }),
+  );
+
+  server.tool(
+    'deleteMessage',
+    'Permanently delete a Gmail message. WARNING: This action cannot be undone. The message is immediately and irreversibly deleted. Use trashMessage for recoverable deletion.',
+    DeleteMessageInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = DeleteMessageInputSchema.parse(args);
+      await client.deleteMessage(parsed.messageId);
+      return { success: true, messageId: parsed.messageId, action: 'permanently_deleted' };
+    }),
+  );
+
+  server.tool(
+    'batchModifyMessages',
+    'Add or remove labels on multiple Gmail messages at once. Useful for bulk organizing, archiving, or categorizing messages.',
+    BatchModifyMessagesInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = BatchModifyMessagesInputSchema.parse(args);
+      await client.batchModifyMessages({
+        ids: parsed.messageIds,
+        addLabelIds: parsed.addLabelIds,
+        removeLabelIds: parsed.removeLabelIds,
+      });
+      return {
+        success: true,
+        modifiedCount: parsed.messageIds.length,
+        addedLabels: parsed.addLabelIds || [],
+        removedLabels: parsed.removeLabelIds || [],
       };
     }),
   );

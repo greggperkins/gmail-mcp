@@ -84,6 +84,128 @@ export const SearchThreadsInputSchema = z.object({
 
 export const ListLabelsInputSchema = z.object({});
 
+// ── Phase 2: Message Write Operations ──
+
+export const ForwardMessageInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message to forward'),
+  to: z.array(z.string()).min(1).describe('Recipient email addresses'),
+  additionalBody: z.string().optional().describe('Additional text to prepend before the forwarded message'),
+  cc: z.array(z.string()).optional().describe('CC recipients'),
+  bcc: z.array(z.string()).optional().describe('BCC recipients'),
+});
+
+export const TrashMessageInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message to move to trash'),
+});
+
+export const UntrashMessageInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message to remove from trash'),
+});
+
+export const DeleteMessageInputSchema = z.object({
+  messageId: z.string().describe('The ID of the message to permanently delete. This action cannot be undone.'),
+});
+
+export const BatchModifyMessagesInputSchema = z.object({
+  messageIds: z.array(z.string()).min(1).max(1000).describe('Message IDs to modify'),
+  addLabelIds: z.array(z.string()).optional().describe('Label IDs to add to the messages'),
+  removeLabelIds: z.array(z.string()).optional().describe('Label IDs to remove from the messages'),
+});
+
+// ── Phase 2: Thread Write Operations ──
+
+export const TrashThreadInputSchema = z.object({
+  threadId: z.string().describe('The ID of the thread to move to trash'),
+});
+
+export const UntrashThreadInputSchema = z.object({
+  threadId: z.string().describe('The ID of the thread to remove from trash'),
+});
+
+export const ModifyThreadInputSchema = z.object({
+  threadId: z.string().describe('The ID of the thread to modify'),
+  addLabelIds: z.array(z.string()).optional().describe('Label IDs to add to the thread'),
+  removeLabelIds: z.array(z.string()).optional().describe('Label IDs to remove from the thread'),
+});
+
+// ── Phase 2: Draft Operations ──
+
+export const ListDraftsInputSchema = z.object({
+  maxResults: z.number().int().min(1).max(500).optional().default(20).describe('Maximum number of results'),
+  pageToken: z.string().optional().describe('Page token for pagination'),
+});
+
+export const GetDraftInputSchema = z.object({
+  draftId: z.string().describe('The ID of the draft to retrieve'),
+  format: z.enum(['full', 'metadata', 'minimal']).optional().default('full').describe('The format to return the draft message in'),
+});
+
+export const CreateDraftInputSchema = z.object({
+  to: z.array(z.string()).min(1).describe('Recipient email addresses'),
+  subject: z.string().describe('Email subject'),
+  body: z.string().describe('Email body content'),
+  cc: z.array(z.string()).optional().describe('CC recipients'),
+  bcc: z.array(z.string()).optional().describe('BCC recipients'),
+  bodyType: z.enum(['text', 'html']).optional().default('text').describe('Body content type'),
+  threadId: z.string().optional().describe('Thread ID to associate the draft with'),
+});
+
+export const UpdateDraftInputSchema = z.object({
+  draftId: z.string().describe('The ID of the draft to update'),
+  to: z.array(z.string()).optional().describe('Recipient email addresses'),
+  subject: z.string().optional().describe('Email subject'),
+  body: z.string().optional().describe('Email body content'),
+  cc: z.array(z.string()).optional().describe('CC recipients'),
+  bcc: z.array(z.string()).optional().describe('BCC recipients'),
+  bodyType: z.enum(['text', 'html']).optional().default('text').describe('Body content type'),
+});
+
+export const SendDraftInputSchema = z.object({
+  draftId: z.string().describe('The ID of the draft to send'),
+});
+
+// ── Phase 2: Label CRUD Operations ──
+
+export const GetLabelInputSchema = z.object({
+  labelId: z.string().describe('The ID of the label to retrieve'),
+});
+
+export const CreateLabelInputSchema = z.object({
+  name: z.string().describe('The display name of the label'),
+  labelListVisibility: z.enum(['labelShow', 'labelShowIfUnread', 'labelHide']).optional().describe('Visibility in the label list'),
+  messageListVisibility: z.enum(['show', 'hide']).optional().describe('Visibility in the message list'),
+  backgroundColor: z.string().optional().describe('Background color hex code (e.g. #000000)'),
+  textColor: z.string().optional().describe('Text color hex code (e.g. #ffffff)'),
+});
+
+export const UpdateLabelInputSchema = z.object({
+  labelId: z.string().describe('The ID of the label to update'),
+  name: z.string().optional().describe('New display name'),
+  labelListVisibility: z.enum(['labelShow', 'labelShowIfUnread', 'labelHide']).optional().describe('Visibility in the label list'),
+  messageListVisibility: z.enum(['show', 'hide']).optional().describe('Visibility in the message list'),
+  backgroundColor: z.string().optional().describe('Background color hex code'),
+  textColor: z.string().optional().describe('Text color hex code'),
+});
+
+export const DeleteLabelInputSchema = z.object({
+  labelId: z.string().describe('The ID of the label to delete'),
+});
+
+export const ApplyLabelInputSchema = z.object({
+  messageIds: z.array(z.string()).min(1).describe('Message IDs to apply the label to'),
+  labelId: z.string().describe('The label ID to apply'),
+});
+
+// ── Phase 2: Utility Operations ──
+
+export const MarkAsReadInputSchema = z.object({
+  messageIds: z.array(z.string()).min(1).describe('Message IDs to mark as read'),
+});
+
+export const MarkAsUnreadInputSchema = z.object({
+  messageIds: z.array(z.string()).min(1).describe('Message IDs to mark as unread'),
+});
+
 // ── Output Types ──
 
 export interface AttachmentInfo {

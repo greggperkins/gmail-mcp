@@ -5,6 +5,8 @@ import { GmailClient } from './client.js';
 import { registerMessageTools } from './tools/messages.js';
 import { registerThreadTools } from './tools/threads.js';
 import { registerLabelTools } from './tools/labels.js';
+import { registerDraftTools } from './tools/drafts.js';
+import { registerUtilityTools } from './tools/utilities.js';
 import { registerInboxResource } from './resources/inbox.js';
 import { registerProfileResource } from './resources/profile.js';
 
@@ -32,6 +34,8 @@ async function main(): Promise<void> {
   registerMessageTools(server, gmailClient);
   registerThreadTools(server, gmailClient);
   registerLabelTools(server, gmailClient);
+  registerDraftTools(server, gmailClient);
+  registerUtilityTools(server, gmailClient);
 
   // Register resources
   registerInboxResource(server, gmailClient);

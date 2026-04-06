@@ -53,6 +53,52 @@ export function buildMimeMessage(params: {
   return buildRawMime(headers, params.body);
 }
 
+export function buildForwardMimeMessage(params: {
+  originalMessage: ParsedMessage;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  additionalBody?: string;
+}): { raw: string; threadId: string } {
+  const { originalMessage, to, additionalBody } = params;
+
+  const subject = originalMessage.subject.match(/^Fwd:/i)
+    ? originalMessage.subject
+    : `Fwd: ${originalMessage.subject}`;
+
+  const forwardHeader = [
+    '',
+    '---------- Forwarded message ----------',
+    `From: ${originalMessage.from}`,
+    `Date: ${originalMessage.date}`,
+    `Subject: ${originalMessage.subject}`,
+    `To: ${originalMessage.to.join(', ')}`,
+    originalMessage.cc.length ? `Cc: ${originalMessage.cc.join(', ')}` : '',
+    '',
+  ].filter(Boolean).join('\n');
+
+  const fullBody = (additionalBody || '') + forwardHeader + originalMessage.body;
+
+  const headers: Record<string, string> = {
+    'MIME-Version': '1.0',
+    'Content-Type': 'text/plain; charset=utf-8',
+    To: to.join(', '),
+    Subject: encodeSubject(subject),
+  };
+
+  if (params.cc?.length) {
+    headers['Cc'] = params.cc.join(', ');
+  }
+  if (params.bcc?.length) {
+    headers['Bcc'] = params.bcc.join(', ');
+  }
+
+  return {
+    raw: buildRawMime(headers, fullBody),
+    threadId: originalMessage.threadId,
+  };
+}
+
 export function buildReplyMimeMessage(params: {
   originalMessage: ParsedMessage;
   body: string;

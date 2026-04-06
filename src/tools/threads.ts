@@ -4,6 +4,9 @@ import {
   ListThreadsInputSchema,
   GetThreadInputSchema,
   SearchThreadsInputSchema,
+  TrashThreadInputSchema,
+  UntrashThreadInputSchema,
+  ModifyThreadInputSchema,
   buildGmailQuery,
   wrapToolHandler,
 } from '../types.js';
@@ -69,6 +72,50 @@ export function registerThreadTools(server: McpServer, client: GmailClient): voi
         threads: result.threads,
         nextPageToken: result.nextPageToken,
         resultSizeEstimate: result.resultSizeEstimate,
+      };
+    }),
+  );
+
+  // ── Phase 2: Write Operations ──
+
+  server.tool(
+    'trashThread',
+    'Move an entire Gmail conversation thread to the trash. Can be recovered with untrashThread.',
+    TrashThreadInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = TrashThreadInputSchema.parse(args);
+      await client.trashThread(parsed.threadId);
+      return { success: true, threadId: parsed.threadId, action: 'trashed' };
+    }),
+  );
+
+  server.tool(
+    'untrashThread',
+    'Remove a Gmail conversation thread from the trash, restoring all messages to their previous location.',
+    UntrashThreadInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = UntrashThreadInputSchema.parse(args);
+      await client.untrashThread(parsed.threadId);
+      return { success: true, threadId: parsed.threadId, action: 'untrashed' };
+    }),
+  );
+
+  server.tool(
+    'modifyThread',
+    'Add or remove labels on an entire Gmail conversation thread.',
+    ModifyThreadInputSchema.shape,
+    wrapToolHandler(async (args) => {
+      const parsed = ModifyThreadInputSchema.parse(args);
+      await client.modifyThread({
+        threadId: parsed.threadId,
+        addLabelIds: parsed.addLabelIds,
+        removeLabelIds: parsed.removeLabelIds,
+      });
+      return {
+        success: true,
+        threadId: parsed.threadId,
+        addedLabels: parsed.addLabelIds || [],
+        removedLabels: parsed.removeLabelIds || [],
       };
     }),
   );

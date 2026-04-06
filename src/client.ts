@@ -94,6 +94,49 @@ export class GmailClient {
     }
   }
 
+  async trashMessage(messageId: string): Promise<void> {
+    try {
+      await this.gmail.users.messages.trash({ userId: 'me', id: messageId });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async untrashMessage(messageId: string): Promise<void> {
+    try {
+      await this.gmail.users.messages.untrash({ userId: 'me', id: messageId });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    try {
+      await this.gmail.users.messages.delete({ userId: 'me', id: messageId });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async batchModifyMessages(params: {
+    ids: string[];
+    addLabelIds?: string[];
+    removeLabelIds?: string[];
+  }): Promise<void> {
+    try {
+      await this.gmail.users.messages.batchModify({
+        userId: 'me',
+        requestBody: {
+          ids: params.ids,
+          addLabelIds: params.addLabelIds,
+          removeLabelIds: params.removeLabelIds,
+        },
+      });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
   // ── Threads ──
 
   async listThreads(params: {
@@ -146,12 +189,219 @@ export class GmailClient {
     }
   }
 
+  async trashThread(threadId: string): Promise<void> {
+    try {
+      await this.gmail.users.threads.trash({ userId: 'me', id: threadId });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async untrashThread(threadId: string): Promise<void> {
+    try {
+      await this.gmail.users.threads.untrash({ userId: 'me', id: threadId });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async modifyThread(params: {
+    threadId: string;
+    addLabelIds?: string[];
+    removeLabelIds?: string[];
+  }): Promise<void> {
+    try {
+      await this.gmail.users.threads.modify({
+        userId: 'me',
+        id: params.threadId,
+        requestBody: {
+          addLabelIds: params.addLabelIds,
+          removeLabelIds: params.removeLabelIds,
+        },
+      });
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  // ── Drafts ──
+
+  async listDrafts(params: {
+    maxResults?: number;
+    pageToken?: string;
+  }): Promise<{
+    drafts: Array<{ id: string; messageId: string }>;
+    nextPageToken?: string;
+    resultSizeEstimate?: number;
+  }> {
+    try {
+      const res = await this.gmail.users.drafts.list({
+        userId: 'me',
+        maxResults: params.maxResults,
+        pageToken: params.pageToken,
+      });
+      return {
+        drafts: (res.data.drafts || []).map((d) => ({
+          id: d.id!,
+          messageId: d.message?.id || '',
+        })),
+        nextPageToken: res.data.nextPageToken || undefined,
+        resultSizeEstimate: res.data.resultSizeEstimate || undefined,
+      };
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async getDraft(
+    draftId: string,
+    format: 'full' | 'metadata' | 'minimal' = 'full',
+  ): Promise<gmail_v1.Schema$Draft> {
+    try {
+      const res = await this.gmail.users.drafts.get({
+        userId: 'me',
+        id: draftId,
+        format,
+      });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async createDraft(raw: string, threadId?: string): Promise<{ id: string; messageId: string }> {
+    try {
+      const message: gmail_v1.Schema$Message = { raw };
+      if (threadId) message.threadId = threadId;
+      const res = await this.gmail.users.drafts.create({
+        userId: 'me',
+        requestBody: { message },
+      });
+      return {
+        id: res.data.id!,
+        messageId: res.data.message?.id || '',
+      };
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async updateDraft(draftId: string, raw: string): Promise<{ id: string; messageId: string }> {
+    try {
+      const res = await this.gmail.users.drafts.update({
+        userId: 'me',
+        id: draftId,
+        requestBody: { message: { raw } },
+      });
+      return {
+        id: res.data.id!,
+        messageId: res.data.message?.id || '',
+      };
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async sendDraft(draftId: string): Promise<{ id: string; threadId: string; labelIds: string[] }> {
+    try {
+      const res = await this.gmail.users.drafts.send({
+        userId: 'me',
+        requestBody: { id: draftId },
+      });
+      return {
+        id: res.data.id!,
+        threadId: res.data.threadId!,
+        labelIds: res.data.labelIds || [],
+      };
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
   // ── Labels ──
 
   async listLabels(): Promise<gmail_v1.Schema$Label[]> {
     try {
       const res = await this.gmail.users.labels.list({ userId: 'me' });
       return res.data.labels || [];
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async getLabel(labelId: string): Promise<gmail_v1.Schema$Label> {
+    try {
+      const res = await this.gmail.users.labels.get({ userId: 'me', id: labelId });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async createLabel(params: {
+    name: string;
+    labelListVisibility?: string;
+    messageListVisibility?: string;
+    backgroundColor?: string;
+    textColor?: string;
+  }): Promise<gmail_v1.Schema$Label> {
+    try {
+      const requestBody: gmail_v1.Schema$Label = {
+        name: params.name,
+        labelListVisibility: params.labelListVisibility,
+        messageListVisibility: params.messageListVisibility,
+      };
+      if (params.backgroundColor || params.textColor) {
+        requestBody.color = {
+          backgroundColor: params.backgroundColor,
+          textColor: params.textColor,
+        };
+      }
+      const res = await this.gmail.users.labels.create({
+        userId: 'me',
+        requestBody,
+      });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async updateLabel(
+    labelId: string,
+    params: {
+      name?: string;
+      labelListVisibility?: string;
+      messageListVisibility?: string;
+      backgroundColor?: string;
+      textColor?: string;
+    },
+  ): Promise<gmail_v1.Schema$Label> {
+    try {
+      const requestBody: gmail_v1.Schema$Label = { id: labelId };
+      if (params.name !== undefined) requestBody.name = params.name;
+      if (params.labelListVisibility !== undefined) requestBody.labelListVisibility = params.labelListVisibility;
+      if (params.messageListVisibility !== undefined) requestBody.messageListVisibility = params.messageListVisibility;
+      if (params.backgroundColor !== undefined || params.textColor !== undefined) {
+        requestBody.color = {
+          backgroundColor: params.backgroundColor,
+          textColor: params.textColor,
+        };
+      }
+      const res = await this.gmail.users.labels.update({
+        userId: 'me',
+        id: labelId,
+        requestBody,
+      });
+      return res.data;
+    } catch (error) {
+      throw this.handleApiError(error);
+    }
+  }
+
+  async deleteLabel(labelId: string): Promise<void> {
+    try {
+      await this.gmail.users.labels.delete({ userId: 'me', id: labelId });
     } catch (error) {
       throw this.handleApiError(error);
     }
